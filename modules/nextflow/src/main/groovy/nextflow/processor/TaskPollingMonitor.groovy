@@ -577,7 +577,8 @@ class TaskPollingMonitor implements TaskMonitor {
     final protected void handleException( TaskHandler handler, Throwable error ) {
         def fault = null
         try {
-            fault = handler.task.processor.resumeOrDie(handler?.task, error)
+            if (evict(handler)) handler.decProcessForks()
+	    fault = handler.task.processor.resumeOrDie(handler?.task, error)
         }
         finally {
             // abort the session if a task task was returned

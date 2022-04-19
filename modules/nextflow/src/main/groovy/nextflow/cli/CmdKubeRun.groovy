@@ -47,6 +47,13 @@ class CmdKubeRun extends CmdRun {
     @Parameter(names = '-pod-image', description = 'Specify the container image for the Nextflow pod')
     String podImage
 
+    @Parameter(names= '-remoteConfig', description = 'Add the specified file from the K8s cluster to configuration set', hidden = true )
+    List<String> runRemoteConfig
+
+    @Parameter(names=['-remoteProfile'], description = 'Choose a configuration profile in the remoteConfig')
+    String remoteProfile
+
+
     @Override
     String getName() { 'kuberun' }
 

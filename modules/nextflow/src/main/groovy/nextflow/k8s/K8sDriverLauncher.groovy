@@ -214,8 +214,9 @@ class K8sDriverLauncher {
                 .setProfile(cmd.profile)
                 .setCmdRun(cmd)
 
-        if( !interactive && !pipelineName.startsWith('/') ) {
-            // -- check and parse project remote config
+            
+	    if( !interactive && !pipelineName.startsWith('/') && !cmd.remoteProfile && !cmd.runRemoteConfig ) {
+	    // -- check and parse project remote config
             final pipelineConfig = new AssetManager(pipelineName, cmd) .getConfigFile()
             builder.setUserConfigFiles(pipelineConfig)
         }
@@ -428,6 +429,13 @@ class K8sDriverLauncher {
         if( paramsFile ) {
             result << "-params-file $paramsFile"
         }
+
+	if ( cmd.runRemoteConfig )
+            cmd.runRemoteConfig.forEach { result << "-config $it" }
+
+        if ( cmd.remoteProfile )
+            result << "-profile ${cmd.remoteProfile}"
+
 
         if( cmd.process?.executor )
             abort('process.executor')
