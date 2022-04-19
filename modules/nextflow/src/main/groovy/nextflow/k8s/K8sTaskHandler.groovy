@@ -17,6 +17,8 @@
 
 package nextflow.k8s
 
+import nextflow.exception.NodeTerminationException
+
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
@@ -256,16 +258,29 @@ class K8sTaskHandler extends TaskHandler {
      */
     protected Map getState() {
         final now = System.currentTimeMillis()
-        final delta =  now - timestamp;
-        if( !state || delta >= 1_000) {
-            def newState = client.podState(podName)
-            if( newState ) {
-                log.trace "[K8s] Get pod=$podName state=$newState"
-                state = newState
-                timestamp = now
+        try {
+            final delta =  now - timestamp;
+            if( !state || delta >= 1_000) {
+                def newState = client.podState(podName)
+                if( newState ) {
+                    log.trace "[K8s] Get pod=$podName state=$newState"
+                    state = newState
+                    timestamp = now
+                }
             }
+            return state
         }
-        return state
+        catch (NodeTerminationException e) {
+            // create a synthetic `state` object adding an extra `nodeTermination`
+            // attribute to return the NodeTerminationException error to the caller method
+            final instant = Instant.now()
+            final result = new HashMap(10)
+            result.terminated = [startedAt:instant.toString(), finishedAt:instant.toString()]
+            result.nodeTermination = e
+            timestamp = now
+            state = result
+            return state
+        }
     }
 
     @Override
@@ -317,10 +332,18 @@ class K8sTaskHandler extends TaskHandler {
         if( !podName ) throw new IllegalStateException("Missing K8s pod name - cannot check if complete")
         def state = getState()
         if( state && state.terminated ) {
-            // finalize the task
-            task.exitStatus = readExitFile()
-            task.stdout = outputFile
-            task.stderr = errorFile
+            if( state.nodeTermination instanceof NodeTerminationException ) {
+                // kee track of the node termination error
+                task.error = (NodeTerminationException) state.nodeTermination
+                // mark the task as ABORTED since thr failure is caused by a node failure
+                task.aborted = true
+            }
+            else {
+                // finalize the task
+                task.exitStatus = readExitFile()
+                task.stdout = outputFile
+                task.stderr = errorFile
+            }
             status = TaskStatus.COMPLETED
             savePodLogOnError(task)
             deletePodIfSuccessful(task)
