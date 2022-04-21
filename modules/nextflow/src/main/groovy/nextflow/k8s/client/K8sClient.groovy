@@ -205,6 +205,9 @@ class K8sClient {
             return podStatus(name)
         }
         catch (K8sResponseException err) {
+
+            log.error("Exception:" + err.response)
+
             if( err.response.code == 404 && isKindPods(err.response)  ) {
                 // this may happen when K8s node is shutdown and the pod is evicted
                 // therefore process exception is thrown so that the failure
