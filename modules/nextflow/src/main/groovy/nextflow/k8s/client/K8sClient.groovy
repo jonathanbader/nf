@@ -206,13 +206,13 @@ class K8sClient {
         }
         catch (K8sResponseException err) {
 
-            log.error("Exception:" + err.response)
+            log.error("Exception in K8s:" + err.response)
 
             if( err.response.code == 404 && isKindPods(err.response)  ) {
                 // this may happen when K8s node is shutdown and the pod is evicted
                 // therefore process exception is thrown so that the failure
                 // can be managed by the nextflow as re-triable execution
-                throw new ProcessFailedException("Unable to find pod $name - The pod may be evicted by a node shutdown event")
+                throw new ProcessFailedException("Unable to find pod $name - The poood may be evicted by a node shutdown event")
             }
             throw err
         }
