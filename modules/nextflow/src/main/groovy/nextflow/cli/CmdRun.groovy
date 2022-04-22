@@ -258,7 +258,7 @@ class CmdRun extends CmdBase implements HubOptions {
         
         checkRunName()
 
-        log.info "N E X T F L O W  ~  version ${Const.APP_VER}"
+        log.info "N E X T F L O W ~ JB ~  version ${Const.APP_VER}"
 
         // -- specify the arguments
         final scriptFile = getScriptFile(pipeline)
